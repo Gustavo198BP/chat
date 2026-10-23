@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Torretas</title>
+<style>
+  :root {
+    --fondo: #f3f4f6;
+    --panel: #ffffff;
+    --texto: #1c2027;
+    --suave: #5d6470;
+    --borde: #dde0e5;
+    --produccion: #1e9a50;
+    --mantenimiento: #d99a00;
+    --falla: #d6363b;
+    --apagada: #9aa0a9;
+    --sin-senal: #565c66;
+    --foco-apagado: #cfd3d9;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #121417;
+      --panel: #1b1e23;
+      --texto: #e7e9ec;
+      --suave: #9aa1ab;
+      --borde: #2b2f36;
+      --produccion: #2fb866;
+      --mantenimiento: #e8ad1a;
+      --falla: #ef5157;
+      --apagada: #6d737c;
+      --sin-senal: #8a909a;
+      --foco-apagado: #33373e;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px;
+    padding: 14px 16px; background: var(--panel); border-bottom: 1px solid var(--borde);
+  }
+  h1 { font-size: 20px; margin: 0; }
+  #cuenta { color: var(--suave); flex: 1; min-width: 200px; }
+  #cuenta b { color: var(--texto); }
+  .controles { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input, select, .boton {
+    font: inherit; color: var(--texto); background: var(--panel);
+    border: 1px solid var(--borde); border-radius: 6px; padding: 5px 10px; text-decoration: none;
+  }
+  .boton:hover { border-color: var(--suave); }
+  main { padding: 16px; display: grid; gap: 16px; max-width: 1500px; margin: 0 auto; }
+  main > * { min-width: 0; }
+
+  .tarjetas { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .tarjeta {
+    display: flex; gap: 12px; padding: 12px; border-radius: 8px;
+    background: var(--panel); border: 1px solid var(--borde); border-left: 6px solid var(--color);
+  }
+  .tarjeta.falla { background: color-mix(in srgb, var(--falla) 10%, var(--panel)); }
+  .tarjeta.sin-senal { border-left-style: dashed; }
+  .torre { display: flex; flex-direction: column; gap: 3px; padding-top: 2px; }
+  .foco { width: 14px; height: 14px; border-radius: 3px; background: var(--foco-apagado); }
+  .foco.on { background: var(--c); box-shadow: 0 0 6px var(--c); }
+  .foco.parpadeo { background: var(--c); animation: parpadeo 1s steps(1) infinite; }
+  .tarjeta.sin-senal .foco { opacity: .35; }
+  @keyframes parpadeo { 50% { background: var(--foco-apagado); box-shadow: none; } }
+  @media (prefers-reduced-motion: reduce) { .foco.parpadeo { animation: none; outline: 2px dashed var(--c); } }
+  .info { min-width: 0; }
+  .nombre {
+    font: inherit; font-weight: 600; color: inherit; background: none; border: 0; padding: 0;
+    cursor: pointer; text-align: left; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .nombre:hover { text-decoration: underline; }
+  .estado { font-weight: 600; color: var(--color); }
+  .tiempo, .detalle { color: var(--suave); font-size: 13px; }
+
+  .produccion { --color: var(--produccion); }
+  .mantenimiento { --color: var(--mantenimiento); }
+  .falla { --color: var(--falla); }
+  .apagada { --color: var(--apagada); }
+  .sin-senal { --color: var(--sin-senal); }
+
+  .panel { background: var(--panel); border: 1px solid var(--borde); border-radius: 8px; padding: 14px 16px; }
+  h2 { font-size: 16px; margin: 0 0 10px; }
+  h2 small { font-weight: normal; color: var(--suave); }
+  .leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 8px; color: var(--suave); font-size: 13px; }
+  .leyenda span::before {
+    content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 2px;
+    background: var(--color); margin-right: 6px; vertical-align: -1px;
+  }
+  .leyenda .sin-senal::before { background: repeating-linear-gradient(45deg, var(--sin-senal) 0 2px, transparent 2px 4px); }
+  #linea svg { display: block; width: 100%; }
+  #linea text { fill: var(--suave); font-size: 12px; }
+  #linea .etiqueta { fill: var(--texto); font-size: 13px; }
+  #linea .reja { stroke: var(--borde); }
+  #linea .ahora { stroke: var(--texto); stroke-dasharray: 3 3; }
+  #linea rect.tramo { cursor: pointer; }
+  #linea rect.tramo:hover { opacity: .8; }
+  .vacio { color: var(--suave); padding: 20px 0; }
+
+  .tabla { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 680px; }
+  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--borde); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-weight: 600; color: var(--suave); font-size: 13px; }
+  tfoot td { font-weight: 600; border-bottom: 0; }
+
+  #globo {
+    position: fixed; z-index: 10; pointer-events: none; max-width: 260px;
+    background: var(--texto); color: var(--panel); padding: 6px 10px; border-radius: 6px; font-size: 13px;
+  }
+  @media (max-width: 600px) {
+    header { padding: 12px; }
+    main { padding: 12px; }
+    .tarjetas { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Torretas</h1>
+  <div id="cuenta"></div>
+  <div class="controles">
+    <input type="date" id="dia" aria-label="Día">
+    <select id="turno" aria-label="Turno"></select>
+    <a id="csv" class="boton" href="#">Descargar CSV</a>
+  </div>
+</header>
+<main>
+  <section class="tarjetas" id="tarjetas"></section>
+  <section class="panel">
+    <h2>Línea de tiempo <small id="rango"></small></h2>
+    <div class="leyenda">
+      <span class="produccion">Producción</span>
+      <span class="mantenimiento">Mantenimiento</span>
+      <span class="falla">Falla</span>
+      <span class="apagada">Apagada</span>
+      <span class="sin-senal">Sin señal</span>
+    </div>
+    <div id="linea"></div>
+  </section>
+  <section class="panel">
+    <h2>Resumen <small id="rango2"></small></h2>
+    <div class="tabla"><table id="resumen"></table></div>
+  </section>
+</main>
+<div id="globo" hidden></div>
+
+<script>
+const ESTADOS = {
+  PRODUCCION: { nombre: 'Producción', clase: 'produccion' },
+  MANTENIMIENTO: { nombre: 'Mantenimiento', clase: 'mantenimiento' },
+  FALLA: { nombre: 'Falla', clase: 'falla' },
+  APAGADA: { nombre: 'Apagada', clase: 'apagada' },
+  SIN_SENAL: { nombre: 'Sin señal', clase: 'sin-senal' },
+};
+const ORDEN = Object.keys(ESTADOS);
+const $ = (id) => document.getElementById(id);
+
+let turnos = [];
+let desfase = 0;       // reloj del servidor menos reloj de este equipo, en segundos
+let tramosVisibles = [];
+
+const ahora = () => Date.now() / 1000 + desfase;
+
+function esc(texto) {
+  return String(texto).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+function hora(ts) {
+  return new Date(ts * 1000).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function duracion(segundos) {
+  segundos = Math.max(0, Math.round(segundos));
+  if (segundos < 60) return `${segundos} s`;
+  const min = Math.round(segundos / 60);
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
+
+async function pedir(url, opciones) {
+  const r = await fetch(url, opciones);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// --- Rango: día + turno ---------------------------------------------------------
+
+function fechaLocal(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function rangoTurno(dia, turno) {
+  const [a, m, d] = dia.split('-').map(Number);
+  if (!turno) return [new Date(a, m - 1, d) / 1000, new Date(a, m - 1, d + 1) / 1000];
+  const [hi, mi] = turno.inicio.split(':').map(Number);
+  const [hf, mf] = turno.fin.split(':').map(Number);
+  const inicio = new Date(a, m - 1, d, hi, mi);
+  const fin = new Date(a, m - 1, d, hf, mf);
+  if (fin <= inicio) fin.setDate(fin.getDate() + 1);  // turno que cruza la medianoche
+  return [inicio / 1000, fin / 1000];
+}
+
+function rango() {
+  const turno = turnos[$('turno').value];
+  return rangoTurno($('dia').value, turno);
+}
+
+function elegirTurnoActual() {
+  const t = ahora();
+  const hoy = new Date(t * 1000);
+  const ayer = new Date(t * 1000); ayer.setDate(ayer.getDate() - 1);
+  for (const dia of [fechaLocal(hoy), fechaLocal(ayer)]) {
+    for (let i = 0; i < turnos.length; i++) {
+      const [a, b] = rangoTurno(dia, turnos[i]);
+      if (t >= a && t < b) { $('dia').value = dia; $('turno').value = i; return; }
+    }
+  }
+  $('dia').value = fechaLocal(hoy);
+  $('turno').value = '';
+}
+
+// --- Estado actual ----------------------------------------------------------------
+
+async function actualizarEstado() {
+  const datos = await pedir('/api/estado');
+  desfase = datos.ahora - Date.now() / 1000;
+  const cuenta = {};
+  $('tarjetas').innerHTML = datos.maquinas.map((m) => {
+    const e = ESTADOS[m.estado] || ESTADOS.SIN_SENAL;
+    cuenta[m.estado] = (cuenta[m.estado] || 0) + 1;
+    const c = m.canales || [];
+    const foco = (i, color) => {
+      const clase = c[i] === 2 ? 'parpadeo' : c[i] ? 'on' : '';
+      return `<i class="foco ${clase}" style="--c: var(--${color})"></i>`;
+    };
+    const tiempo = m.desde ? `desde ${hora(m.desde)} · ${duracion(ahora() - m.desde)}` : 'nunca se ha conectado';
+    const parpadeo = c.slice(0, 3).includes(2) ? ' (parpadeando)' : '';
+    return `<div class="tarjeta ${e.clase}">
+      <div class="torre" aria-hidden="true">${foco(2, 'falla')}${foco(1, 'mantenimiento')}${foco(0, 'produccion')}</div>
+      <div class="info">
+        <button class="nombre" data-mac="${esc(m.mac)}" data-nombre="${esc(m.nombre)}" title="Cambiar nombre">${esc(m.nombre)}</button>
+        <div class="estado">${e.nombre}${parpadeo}</div>
+        <div class="tiempo">${tiempo}</div>
+        ${m.rssi && m.estado !== 'SIN_SENAL' ? `<div class="detalle">señal ${m.rssi} dBm</div>` : ''}
+      </div>
+    </div>`;
+  }).join('') || '<p class="vacio">Todavía no llega ningún nodo. Revisa que el receptor esté conectado.</p>';
+
+  const partes = [
+    ['PRODUCCION', 'produciendo'], ['FALLA', 'en falla'], ['MANTENIMIENTO', 'en mantenimiento'],
+    ['APAGADA', 'apagadas'], ['SIN_SENAL', 'sin señal'],
+  ].filter(([k]) => cuenta[k]).map(([k, texto]) => `<b>${cuenta[k]}</b> ${texto}`);
+  $('cuenta').innerHTML = partes.join(' · ');
+}
+
+$('tarjetas').addEventListener('click', async (ev) => {
+  const boton = ev.target.closest('.nombre');
+  if (!boton) return;
+  const nombre = prompt(`Nombre para la máquina ${boton.dataset.mac}`, boton.dataset.nombre);
+  if (!nombre || !nombre.trim()) return;
+  try {
+    await pedir('/api/nombre', { method: 'POST', body: JSON.stringify({ mac: boton.dataset.mac, nombre: nombre.trim() }) });
+  } catch (e) {
+    alert(`No se pudo cambiar el nombre: ${e.message}`);
+  }
+  actualizarEstado();
+  actualizarLinea();
+});
+
+// --- Línea de tiempo y resumen ---------------------------------------------------
+
+async function actualizarLinea() {
+  const [desde, hasta] = rango();
+  $('csv').href = `/api/tramos.csv?desde=${desde}&hasta=${hasta}`;
+  const texto = `${new Date(desde * 1000).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })}, ${hora(desde)}–${hora(hasta)}`;
+  $('rango').textContent = texto;
+  $('rango2').textContent = texto;
+  const datos = await pedir(`/api/linea?desde=${desde}&hasta=${hasta}`);
+  dibujarLinea(datos, desde, hasta);
+  dibujarResumen(datos);
+}
+
+function dibujarLinea(datos, desde, hasta) {
+  const contenedor = $('linea');
+  if (!datos.maquinas.length || datos.hasta <= desde) {
+    contenedor.innerHTML = '<p class="vacio">No hay datos en este rango.</p>';
+    return;
+  }
+  const ancho = contenedor.clientWidth;
+  const etiqueta = ancho < 500 ? 84 : 130;
+  const fila = 26, eje = 22, alto = eje + datos.maquinas.length * fila;
+  const x = (t) => etiqueta + ((t - desde) / (hasta - desde)) * (ancho - etiqueta - 6);
+  let svg = `<svg viewBox="0 0 ${ancho} ${alto}" height="${alto}" role="img" aria-label="Línea de tiempo por máquina">
+    <defs><pattern id="rayas" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="var(--panel)"/><rect width="3" height="6" fill="var(--sin-senal)"/></pattern></defs>`;
+
+  // Marcas de hora, a no menos de ~70 px entre sí.
+  const minutosPorPx = (hasta - desde) / 60 / (ancho - etiqueta);
+  const paso = [15, 30, 60, 120, 180, 360].find((p) => p / minutosPorPx >= 70) || 720;
+  const marca = new Date(desde * 1000);
+  marca.setMinutes(Math.ceil(marca.getMinutes() / paso) * paso, 0, 0);
+  while (marca / 1000 <= hasta) {
+    const px = x(marca / 1000);
+    const ancla = px > ancho - 24 ? 'end' : 'middle';
+    svg += `<line class="reja" x1="${px}" x2="${px}" y1="${eje - 4}" y2="${alto}"/>
+      <text x="${px}" y="${eje - 8}" text-anchor="${ancla}">${hora(marca / 1000)}</text>`;
+    marca.setMinutes(marca.getMinutes() + paso);
+  }
+
+  tramosVisibles = [];
+  datos.maquinas.forEach((m, i) => {
+    const y = eje + i * fila;
+    const nombre = m.nombre.length > (etiqueta < 100 ? 10 : 16) ? m.nombre.slice(0, etiqueta < 100 ? 9 : 15) + '…' : m.nombre;
+    svg += `<text class="etiqueta" x="0" y="${y + 17}">${esc(nombre)}</text>`;
+    for (const [inicio, fin, estado] of m.tramos) {
+      const e = ESTADOS[estado] || ESTADOS.SIN_SENAL;
+      const relleno = estado === 'SIN_SENAL' ? 'url(#rayas)' : `var(--${e.clase})`;
+      const w = Math.max(1, x(fin) - x(inicio));
+      svg += `<rect class="tramo" data-i="${tramosVisibles.length}" x="${x(inicio)}" y="${y + 3}" width="${w}" height="${fila - 6}" fill="${relleno}"/>`;
+      tramosVisibles.push({ maquina: m.nombre, inicio, fin, estado: e.nombre });
+    }
+  });
+  const t = ahora();
+  if (t > desde && t < hasta) svg += `<line class="ahora" x1="${x(t)}" x2="${x(t)}" y1="${eje - 4}" y2="${alto}"/>`;
+  contenedor.innerHTML = svg + '</svg>';
+}
+
+function mostrarGlobo(ev) {
+  const rect = ev.target.closest('rect.tramo');
+  const globo = $('globo');
+  if (!rect) { globo.hidden = true; return; }
+  const t = tramosVisibles[rect.dataset.i];
+  globo.innerHTML = `<b>${esc(t.maquina)}</b><br>${t.estado}<br>${hora(t.inicio)}–${hora(t.fin)} (${duracion(t.fin - t.inicio)})`;
+  globo.hidden = false;
+  const x = Math.min(ev.clientX + 12, window.innerWidth - globo.offsetWidth - 8);
+  globo.style.left = `${x}px`;
+  globo.style.top = `${ev.clientY + 14}px`;
+}
+$('linea').addEventListener('pointermove', mostrarGlobo);
+$('linea').addEventListener('pointerdown', mostrarGlobo);
+$('linea').addEventListener('pointerleave', () => { $('globo').hidden = true; });
+
+function dibujarResumen(datos) {
+  const columnas = ['PRODUCCION', 'MANTENIMIENTO', 'FALLA', 'APAGADA', 'SIN_SENAL'];
+  const total = { segundos: {}, veces: {} };
+  const porcentaje = (s) => {
+    const conocido = columnas.filter((c) => c !== 'SIN_SENAL').reduce((a, c) => a + (s[c] || 0), 0);
+    return conocido ? `${Math.round((100 * (s.PRODUCCION || 0)) / conocido)} %` : '—';
+  };
+  const fila = (nombre, r) => `<tr><td>${esc(nombre)}</td>${columnas.map((c) => `<td>${r.segundos[c] ? duracion(r.segundos[c]) : '—'}</td>`).join('')}
+    <td>${r.veces.FALLA || 0}</td><td>${porcentaje(r.segundos)}</td></tr>`;
+  let cuerpo = '';
+  for (const m of datos.maquinas) {
+    for (const c of ORDEN) {
+      total.segundos[c] = (total.segundos[c] || 0) + (m.resumen.segundos[c] || 0);
+      total.veces[c] = (total.veces[c] || 0) + (m.resumen.veces[c] || 0);
+    }
+    cuerpo += fila(m.nombre, m.resumen);
+  }
+  $('resumen').innerHTML = `<thead><tr><th>Máquina</th>${columnas.map((c) => `<th>${ESTADOS[c].nombre}</th>`).join('')}
+    <th>Fallas</th><th>% producción</th></tr></thead><tbody>${cuerpo}</tbody>
+    <tfoot>${fila('Todas', total)}</tfoot>`;
+}
+
+// --- Arranque ---------------------------------------------------------------------
+
+async function iniciar() {
+  try {
+    turnos = (await pedir('/api/config')).turnos || [];
+  } catch (e) { turnos = []; }
+  $('turno').innerHTML = '<option value="">Día completo</option>' +
+    turnos.map((t, i) => `<option value="${i}">${esc(t.nombre)} (${esc(t.inicio)}–${esc(t.fin)})</option>`).join('');
+  await actualizarEstado().catch(() => {});
+  elegirTurnoActual();
+  await actualizarLinea().catch(() => {});
+
+  $('dia').addEventListener('change', actualizarLinea);
+  $('turno').addEventListener('change', actualizarLinea);
+  let espera;
+  window.addEventListener('resize', () => { clearTimeout(espera); espera = setTimeout(actualizarLinea, 200); });
+  setInterval(() => actualizarEstado().catch(() => {}), 3000);
+  setInterval(() => {
+    const [desde, hasta] = rango();
+    if (ahora() > desde && ahora() < hasta + 60) actualizarLinea().catch(() => {});
+  }, 20000);
+}
+iniciar();
+</script>
+</body>
+</html>
