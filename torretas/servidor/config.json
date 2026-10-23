@@ -1,0 +1,18 @@
+{
+  "puerto_serial": "auto",
+  "http_host": "0.0.0.0",
+  "http_puerto": 8080,
+  "base_de_datos": "torretas.db",
+  "segundos_sin_senal": 60,
+  "canales": ["verde", "amarillo", "rojo", "extra"],
+  "prioridad": [
+    ["rojo", "FALLA"],
+    ["amarillo", "MANTENIMIENTO"],
+    ["verde", "PRODUCCION"]
+  ],
+  "turnos": [
+    {"nombre": "Turno 1", "inicio": "06:00", "fin": "14:00"},
+    {"nombre": "Turno 2", "inicio": "14:00", "fin": "22:00"},
+    {"nombre": "Turno 3", "inicio": "22:00", "fin": "06:00"}
+  ]
+}
